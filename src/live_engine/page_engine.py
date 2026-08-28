@@ -622,6 +622,7 @@ def render(findings_page, engine_page) -> None:
                 f'gap:14px;">{theme_cards}</div>',
                 unsafe_allow_html=True,
             )
+        chrome.footer()
         st.stop()
 
     # --------------------------------------------------------------------------
@@ -888,3 +889,5 @@ def render(findings_page, engine_page) -> None:
             mime="application/json",
             use_container_width=True,
         )
+
+    chrome.footer()

@@ -1,6 +1,6 @@
 """Discovery Findings page -- the static evidence-collection story.
 
-Content ported from deliverables/myntra-wishlist-findings.html ("Evidence
+Content ported from docs/myntra-wishlist-findings.html ("Evidence
 Atlas"). This page never calls a live API and never reruns from a widget of
 its own (only the "Try it yourself" button, which immediately navigates
 away) -- it is meant to sit still and be read.
@@ -450,3 +450,5 @@ def render(findings_page, engine_page) -> None:
         unsafe_allow_html=True,
     )
     _scene_close()
+
+    chrome.footer(end_label="End of Atlas")

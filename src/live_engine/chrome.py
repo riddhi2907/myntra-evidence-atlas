@@ -1,6 +1,6 @@
 """Shared page chrome: one CSS injection, used by every page.
 
-Ported from deliverables/myntra-wishlist-findings.html -- that page is the
+Ported from docs/myntra-wishlist-findings.html -- that page is the
 design source of truth for this app now, not an independent interpretation
 of it. Every color/type/shape value below comes from live_engine.charts, so
 this file and the chart primitives cannot drift apart. Both pages
@@ -11,9 +11,27 @@ never look inconsistent with each other.
 
 from __future__ import annotations
 
+import base64
+from functools import lru_cache
+from html import escape
+from pathlib import Path
+
 import streamlit as st
 
 from . import charts
+
+# phase3_live_engine/assets/ -- copied into this phase so it stays
+# independently publishable (CLAUDE.md: Phase 3 crosses nothing).
+ASSETS = Path(__file__).resolve().parents[2] / "assets"
+LOGO = ASSETS / "evidence-atlas-logo.png"
+
+
+@lru_cache(maxsize=1)
+def _logo_data_uri() -> str:
+    """The brand mark as a data URI -- inlined into the one CSS block rather
+    than served as a file so the nav pill needs no extra asset route."""
+    b64 = base64.b64encode((ASSETS / "evidence-atlas-logo-96.png").read_bytes()).decode()
+    return f"data:image/png;base64,{b64}"
 
 
 def inject_css() -> None:
@@ -254,10 +272,17 @@ def inject_css() -> None:
           .st-key-navshell [data-testid="stHorizontalBlock"] {{ align-items: center; gap: 4px; }}
           .brand {{ display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 800;
                     letter-spacing: -.02em; color: var(--ink); }}
-          .brand-icon {{ position: relative; display: grid; place-items: center; width: 35px; height: 35px;
-                         border: 1px solid var(--white-line); border-radius: 12px;
-                         background: linear-gradient(145deg, rgba(47,200,194,.92), rgba(86,70,201,.92));
-                         box-shadow: 0 8px 20px rgba(74,79,181,.22), inset 0 1px 0 rgba(255,255,255,.55); }}
+          /* The logo is a finished app-icon (its own rounded-square edge,
+             gradient, and highlight) -- rendered as an <img> at its native
+             aspect so nothing is cropped, lifted off the glass pill by a
+             drop-shadow that follows the PNG's rounded-corner alpha (a
+             box-shadow here would show square corners past the artwork). */
+          .brand-icon {{ width: 38px; height: 38px; flex: 0 0 38px; object-fit: contain;
+                         filter: drop-shadow(0 2px 5px rgba(17,24,43,.18))
+                                 drop-shadow(0 9px 20px rgba(74,79,181,.30));
+                         transition: transform .25s cubic-bezier(.2,.75,.2,1); }}
+          .brand:hover .brand-icon {{ transform: rotate(-4deg) scale(1.06); }}
+          @media (prefers-reduced-motion: reduce) {{ .brand-icon {{ transition: none; }} }}
           .st-key-navshell [data-testid="stPageLink"] {{ border-radius: 12px; padding: 2px 4px; }}
           .st-key-navshell [data-testid="stPageLink"]:hover {{ background: rgba(255,255,255,.75); }}
           .st-key-navshell [data-testid="stPageLink"] p {{ font-size: 12.5px !important; font-weight: 700 !important;
@@ -749,6 +774,25 @@ def inject_css() -> None:
           [data-testid="stCodeBlock"] pre {{ background: rgba(255,255,255,.5) !important; border: 1px solid var(--white-line);
                                              border-radius: 12px; font-size: 11.5px; }}
           hr {{ border-color: var(--line); margin: 1.6rem 0; }}
+
+          /* Page footer -- the closing brand mark, in flow at the bottom of
+             each page: the nav pill's [icon + name] lockup on the canvas
+             (no glass). Findings passes an `End of Atlas` marker in the
+             app's own left-anchored .section-id eyebrow idiom -- its 28px
+             tick IS the terminus rule, a bookend to every section eyebrow
+             above it, so that footer carries no separate divider. The Live
+             Engine has no eyebrow (it is a tool you ran, not an atlas you
+             finished), so it falls back to a thin full-width end rule. */
+          .atlas-footer {{ width: min(100%, 1240px); margin: 24px auto 10px;
+                           padding: 18px 2px 0; border-top: 1px solid rgba(49,67,102,.24);
+                           box-shadow: inset 0 2px 0 rgba(255,255,255,.7); }}
+          .atlas-footer:has(.atlas-end) {{ margin-top: 14px; padding-top: 0;
+                                           border-top: none; box-shadow: none; }}
+          .atlas-footer .atlas-end {{ margin: 0 0 13px !important; }}
+          .atlas-footer .af-lockup {{ display: flex; align-items: center; gap: 11px; }}
+          .atlas-footer img {{ width: 38px; height: 38px; flex: 0 0 38px; object-fit: contain;
+                               filter: drop-shadow(0 2px 6px rgba(74,79,181,.24)); }}
+          .atlas-footer .af-name {{ font-size: 13px; font-weight: 850; letter-spacing: -.01em; color: var(--ink); }}
         </style>
         <div class="ambient a"></div>
         <div class="ambient b"></div>
@@ -782,7 +826,7 @@ def nav_shell(findings_page, engine_page, current: str) -> None:
         brand_col, findings_col, engine_col = st.columns([3, 1, 1], vertical_alignment="center")
         with brand_col:
             st.markdown(
-                '<span class="brand"><span class="brand-icon" aria-hidden="true"></span>'
+                f'<span class="brand"><img class="brand-icon" src="{_logo_data_uri()}" alt="" />'
                 "<span>Evidence Atlas</span></span>",
                 unsafe_allow_html=True,
             )
@@ -790,3 +834,25 @@ def nav_shell(findings_page, engine_page, current: str) -> None:
             st.page_link(findings_page, label="Findings", disabled=(current == "findings"))
         with engine_col:
             st.page_link(engine_page, label="Live engine", disabled=(current == "engine"))
+
+
+def footer(end_label: str | None = None) -> None:
+    """Closing brand mark in flow at the bottom of a page -- the nav pill's
+    [icon + name] lockup, on the canvas rather than a glass surface, below a
+    full-width end rule. Called at the end of each page's render().
+
+    `end_label` (Findings only) adds an `End of Atlas`-style marker above the
+    lockup, in the app's left-anchored .section-id eyebrow idiom -- a bookend
+    to the section eyebrows above it. The Live Engine passes nothing: it is a
+    tool you ran, not an atlas you finished. No tagline on either -- any
+    one-line pipeline claim is true on only one page.
+    """
+    label_html = (
+        f'<p class="section-id atlas-end">{escape(end_label)}</p>' if end_label else ""
+    )
+    st.markdown(
+        f'<footer class="atlas-footer">{label_html}'
+        f'<div class="af-lockup"><img src="{_logo_data_uri()}" alt="" />'
+        '<span class="af-name">Evidence Atlas</span></div></footer>',
+        unsafe_allow_html=True,
+    )

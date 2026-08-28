@@ -3,7 +3,7 @@
 Two pages, one design system:
   - Discovery Findings (live_engine/page_findings.py): the static
     evidence-collection story, ported from
-    deliverables/myntra-wishlist-findings.html.
+    docs/myntra-wishlist-findings.html.
   - Live Engine (live_engine/page_engine.py): fetch public consumer
     feedback right now, classify it against the locked codebook, map it
     onto the twelve opportunity themes and six metric-decomposition nodes.
@@ -31,6 +31,7 @@ from live_engine import page_engine, page_findings  # noqa: E402
 
 st.set_page_config(
     page_title="Myntra Wishlist Discovery Engine",
+    page_icon=str(Path(__file__).resolve().parent / "assets" / "evidence-atlas-logo.png"),
     layout="wide",
     initial_sidebar_state="collapsed",
 )

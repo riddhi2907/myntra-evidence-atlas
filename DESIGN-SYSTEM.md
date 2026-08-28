@@ -22,7 +22,7 @@ Only this document can drift from the code.
 |------|-------|-------|------|
 | Teal | `#007f83` | `--teal` / `SERIES` | Primary accent — section-id rules, links, primary data series in every chart, the one hue that carries magnitude |
 | Teal Bright | `#2fc8c2` | `--teal-bright` / `SERIES_SOFT` | Status-dot "ok" state, gradient stop paired with Indigo/Violet in the hero accent-word and primary-button shine |
-| Indigo | `#5646c9` | `--indigo` / `INDIGO` | Second stop in the three-color gradient sweep (brand-icon fill, accent-word, primary button) — never used alone as a flat fill |
+| Indigo | `#5646c9` | `--indigo` / `INDIGO` | Second stop in the three-color gradient sweep (accent-word, primary button) — never used alone as a flat fill |
 | Violet | `#8d79e8` | `--violet` / `VIOLET` | Third gradient stop, softest of the three — same rule as Indigo, gradient-only |
 | Coral | `#e86561` | `--coral` / `CORAL` | Critical/negative state only — status-dot "bad", negative sentiment bar. Never decorative |
 | Amber | `#b96a00` | `--amber` / `AMBER` | Warning state only — status-dot "warn" (e.g. YouTube key missing) |
@@ -192,6 +192,8 @@ Two pages, one shared chrome, **deliberately different page-level composition**.
 Do not re-add a shared "both pages open with the same shape" rule, a `.cover-h1`/`.cover-kicker` treatment on the Engine hero, or a gradient accent-word in `.engine-h1` — the divergence is the point, and CLAUDE.md's tiebreak (skills win on composition) backs it. Tokens, radius, color, nav, and spacing *scale* stay shared.
 
 Navigation is a single fixed floating pill, transparent-canvas-to-content (no separate "on hero vs. on content" nav treatment, unlike sites with a dark hero band — this app has no dark hero, so the nav pill's glass treatment is constant everywhere).
+
+The brand mark is `assets/evidence-atlas-logo.png` — a finished rounded-square app icon in the system's own teal→indigo→violet gradient, carrying its own edge and highlight. It renders as an `<img>` (never cropped): 38px in the nav pill (`.brand-icon`, lifted by a drop-shadow that follows the PNG alpha, slight rotate-scale on `.brand:hover`) and 38px in the shared page footer (`chrome.footer()` — the closing brand mark: the nav pill's `[icon + name]` lockup on the canvas. Findings passes `end_label="End of Atlas"`, rendered above the lockup in the left-anchored `.section-id` eyebrow idiom — its 28px tick is the terminus rule, a bookend to the section eyebrows above it, so that footer carries no separate divider. The Live Engine passes nothing (a tool you ran, not an atlas you finished) and falls back to a thin full-width end rule. No tagline on either). `chrome._logo_data_uri()` inlines the 96px copy as a data URI in both places (no extra asset route); the 256px copy is the `st.set_page_config(page_icon=…)` browser-tab favicon. Both sizes live in `phase3_live_engine/assets/` so the phase stays independently publishable.
 
 ## Agent Prompt Guide
 
