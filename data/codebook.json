@@ -1,0 +1,116 @@
+{
+  "codebook_version": "v1.1",
+  "status": "LOCKED for full-corpus analysis (16,917 records). No taxonomy/field changes are planned after this version unless a full-corpus QA pass finds a concrete, systemic failure pattern -- see plan_phase2.md.",
+  "note": "Revises v0 (see codebook_v0.json). v0 used a binary is_relevant gate that discarded post-purchase evidence (delivery/fit/CS/trust issues) unless it explicitly described a not-yet-made wishlist decision. v1 replaces that gate with evidence_role (five values, not two) so post-purchase evidence is captured and separately judged for whether it plausibly affects a FUTURE purchase decision (future_purchase_relevance), rather than being discarded outright. journey_stage (funnel position) is now separate from journey_signals (RQ1-6 behavioral signals) -- a record can have one stage and multiple signals; 'comparison' lives only in journey_signals, not in journey_stage, so it is never double-counted. purchase_outcome no longer conflates the purchase decision with what happened after -- returns/exchanges/CS problems live in post_purchase instead. v1.1 changes NO fields or label taxonomy from v1 -- the 250-record v1 pilot validated the structure (94/100 evidence captured vs. v0's 23/100, on the same shared records; 0 non-verbatim quotes; 0 required future_purchase_relevance downgrades). The only fix in v1.1 is a prompt-level confidence-calibration rule: v1 pilot output showed 'unclear'/'unknown' fallback labels carrying 94-98% mean confidence across wishlist_role, purchase_intent, journey_stage, and purchase_outcome -- confidence was being scored on how sure the model was that no clear answer exists, not on evidence strength, making it useless for downstream filtering. See prompt.py's confidence-calibration rule.",
+
+  "evidence_role": [
+    {"label": "direct_purchase_decision", "definition": "The record is about deciding whether/when/what to buy for an item not yet purchased, or a decision currently in progress -- motivation, barrier, uncertainty, comparison, postponement, external research.", "positive_example": "still deciding between two dresses, checking reviews before ordering", "negative_example": "loved the fit, exactly as shown"},
+    {"label": "indirect_future_purchase", "definition": "The record's main content is something else (often post-purchase), but the text EXPLICITLY connects it to future purchase/shopping behavior or trust. Requires a stated or very strongly implied forward-looking effect, not an inference.", "positive_example": "wrong size delivered, exchange refused, never ordering from Myntra again", "negative_example": "wrong size delivered" },
+    {"label": "post_purchase_learning", "definition": "A post-purchase account (delivery, fit, quality, return, exchange, customer service) with NO explicit statement connecting it to future purchase behavior.", "positive_example": "the jeans arrived a size small despite matching the size chart", "negative_example": "just browsing new arrivals"},
+    {"label": "general_feedback", "definition": "Broad product/app/service commentary not tied to a specific purchase decision or a clear post-purchase account -- generic praise/complaint, unrelated app issues, off-topic discussion.", "positive_example": "customer service is impossible to reach, no humans on the line", "negative_example": "n/a"},
+    {"label": "irrelevant", "definition": "Not about Myntra/AJIO shopping/product decisions at all.", "positive_example": "random unrelated comment", "negative_example": "n/a"}
+  ],
+
+  "journey_stage": {
+    "note": "Funnel position -- at most ONE per record, only when clearly supported by the text; null/unclear otherwise. Deliberately excludes 'comparison' -- that behavior is captured in journey_signals, not here, so it is never counted in both places.",
+    "values": [
+      {"label": "discovery", "definition": "Encountering/finding a product for the first time."},
+      {"label": "evaluation", "definition": "Actively assessing a specific product's suitability before any wishlist/purchase action."},
+      {"label": "wishlist_save", "definition": "The act or state of saving/wishlisting an item."},
+      {"label": "hesitation", "definition": "Stalled between identifying a product and acting on it -- covers uncertainty/postponement moments as a funnel position, not as the behavioral reason (see journey_signals for the reason)."},
+      {"label": "purchase", "definition": "The act of buying."},
+      {"label": "delivery", "definition": "Order fulfillment / shipping stage."},
+      {"label": "trial_use", "definition": "Trying on / using the product after receipt."},
+      {"label": "return_exchange", "definition": "Returning or exchanging the product."},
+      {"label": "post_purchase_reflection", "definition": "Reflecting on the completed purchase experience overall, after trial/use or return/exchange has settled."},
+      {"label": "unclear", "definition": "No single funnel position clearly supported."}
+    ]
+  },
+
+  "journey_signals": {
+    "note": "RQ1-6 behavioral signals. Multi-label -- a record can carry more than one, independent of journey_stage.",
+    "values": [
+      {"label": "wishlist_motivation", "definition": "Why the user added or would add a product to a wishlist.", "positive_example": "adding this to my wishlist for when it goes on sale"},
+      {"label": "purchase_barrier", "definition": "A concrete reason a wishlisted/considered NOT-YET-PURCHASED product was not purchased.", "positive_example": "didn't buy because the reviews mentioned bad stitching"},
+      {"label": "uncertainty", "definition": "An open question/doubt remaining after identifying a liked product, not yet resolved.", "positive_example": "not sure if this runs small, no reviews mention sizing"},
+      {"label": "purchase_postponement", "definition": "An explicit decision to delay a purchase.", "positive_example": "waiting for payday to buy this"},
+      {"label": "comparison", "definition": "Weighing this product/listing against at least one alternative.", "positive_example": "comparing this with the Amazon listing before deciding"},
+      {"label": "external_information", "definition": "Sought information outside Myntra/AJIO before purchasing.", "positive_example": "checked a YouTube haul video before ordering"}
+    ]
+  },
+
+  "factor_tags": {
+    "note": "RQ7's seven factors plus factors that emerge from post-purchase/service evidence. Do not tag a factor just because the retrieval query mentioned it -- only from what the text itself says.",
+    "rq7_seeds": ["fit_size", "styling", "price", "reviews", "occasion", "social_validation"],
+    "emergent_seeds": ["quality", "delivery", "returns", "trust", "availability", "customer_service", "authenticity"],
+    "definitions": {
+      "fit_size": "Sizing, fit, body-type match.",
+      "styling": "Look, style match, versatility.",
+      "price": "Cost, discounts, value for money.",
+      "reviews": "Presence/absence/trustworthiness of product reviews.",
+      "occasion": "A specific event/use-case driving the decision.",
+      "social_validation": "Influence of others' opinions, trends, influencers.",
+      "quality": "Material/build quality, durability.",
+      "delivery": "Shipping speed/reliability.",
+      "returns": "Return/exchange policy or experience.",
+      "trust": "Trust in the platform/seller (authenticity, fairness, reliability of process).",
+      "availability": "Stock/size availability.",
+      "customer_service": "Support responsiveness/quality.",
+      "authenticity": "Genuineness of the product vs. counterfeit concern."
+    }
+  },
+
+  "wishlist_role": [
+    {"label": "price_tracking", "definition": "Saved to monitor price/wait for a discount."},
+    {"label": "style_inspiration", "definition": "Saved for mood-board/style reference, not a purchase queue."},
+    {"label": "purchase_queue", "definition": "Saved as a to-buy list item."},
+    {"label": "gift_planning", "definition": "Saved for someone else / a gift."},
+    {"label": "comparison_shortlist", "definition": "Saved specifically to compare against other candidates."},
+    {"label": "unclear", "definition": "Record doesn't clearly support a specific wishlist-use reason, or doesn't concern wishlist saving at all."}
+  ],
+
+  "purchase_intent": [
+    {"label": "genuine_intent", "definition": "Explicit/strongly implied plan to actually purchase this specific item."},
+    {"label": "consideration", "definition": "Actively weighing whether to buy, not yet decided."},
+    {"label": "bookmarking", "definition": "Saved for later reference/tracking with no stated purchase plan."},
+    {"label": "inspiration", "definition": "Saved for style/mood-board purposes, no purchase intent implied."},
+    {"label": "unclear", "definition": "Not enough evidence to classify intent."}
+  ],
+
+  "purchase_outcome": {
+    "note": "The decision outcome only -- NOT what happened after purchase (see post_purchase). A returned item is still 'purchased' here; the return lives in post_purchase.issues and journey_stage=return_exchange.",
+    "values": ["purchased", "delayed", "abandoned", "alternative_chosen", "unknown"]
+  },
+
+  "post_purchase_issue_types": [
+    {"label": "delivery_problem", "definition": "Late/failed/mishandled delivery."},
+    {"label": "fit_quality_problem", "definition": "Wrong size, poor fit, or quality defect on the received item."},
+    {"label": "customer_service_problem", "definition": "Poor support experience (unresponsive, unhelpful, refused resolution)."},
+    {"label": "wrong_item", "definition": "Received a different item than ordered."},
+    {"label": "authenticity_problem", "definition": "Suspected counterfeit/non-genuine item."},
+    {"label": "other", "definition": "Any other post-purchase problem not covered above."}
+  ],
+
+  "future_purchase_relevance": {
+    "note": "Only mark direct/indirect when the text itself supports it -- a quote is required for direct/indirect or the label is downgraded to unclear during validation.",
+    "values": [
+      {"label": "direct", "definition": "Text explicitly states an effect on future purchasing/shopping behavior.", "worked_example": "\"Wrong size delivered, exchange refused, never ordering from Myntra again.\" -> direct (explicit refusal to order again)."},
+      {"label": "indirect", "definition": "Text strongly implies a forward-looking effect without stating it as explicitly as 'direct' cases -- e.g. trust language, hedged future statements.", "worked_example": "\"After that experience I'll think twice before ordering anything I can't try in store.\" -> indirect."},
+      {"label": "none", "definition": "Text is post-purchase feedback with no future-purchase implication, positive or negative.", "worked_example": "\"Love the dress, fits perfectly.\" -> none (positive post-purchase feedback, not a stated future-purchase effect either way)."},
+      {"label": "unclear", "definition": "A post-purchase problem is stated but the text does not say whether it affects future purchasing.", "worked_example": "\"Wrong size delivered.\" -> unclear (a problem occurred; effect on future purchasing not stated)."}
+    ]
+  },
+
+  "external_research_channels": [
+    {"label": "cross_retailer_listing", "definition": "Checked the same/similar product on another retailer."},
+    {"label": "influencer_or_haul_video", "definition": "YouTube/Instagram influencer or haul content."},
+    {"label": "review_site", "definition": "Third-party review or forum site."},
+    {"label": "friends_family", "definition": "Asked people they know."},
+    {"label": "offline_store", "definition": "Checked or tried the product in a physical store."},
+    {"label": "social_media_post", "definition": "General social media mention/discussion, not influencer-specific."}
+  ],
+
+  "event_timeline_relative_time": ["past", "ongoing", "anticipated", "unspecified"],
+
+  "sentiment": ["positive", "negative", "neutral", "mixed"]
+}

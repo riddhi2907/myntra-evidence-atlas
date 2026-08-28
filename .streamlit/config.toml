@@ -1,0 +1,20 @@
+# The page is designed against the validated light palette (charts.py), so the
+# theme is pinned rather than left to follow the viewer's OS setting -- the
+# inline chart CSS defines one surface, and a Streamlit dark chrome around a
+# light chart surface reads as a rendering bug.
+#
+# These values mirror charts.CANVAS / SURFACE / INK_PRIMARY / SERIES. Change
+# them there first, then here.
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#f6f6f4"
+secondaryBackgroundColor = "#fdfdfc"
+textColor = "#121211"
+font = "sans serif"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

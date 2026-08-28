@@ -1,0 +1,127 @@
+[
+ {
+  "theme_id": "T1",
+  "name": "Authenticity & Counterfeit Doubt",
+  "mechanism": "A specific, recurring belief or fear that a product is fake/counterfeit, present as a pre-purchase barrier (doubt blocks the decision), a post-purchase confirmation (received item believed fake), and as an explicitly cited reason for abandoning the platform.",
+  "metric_nodes": [
+   "M2",
+   "M4",
+   "M6"
+  ],
+  "corpus_share_pct": 13.09,
+  "total_evidence_count": 2215
+ },
+ {
+  "theme_id": "T2",
+  "name": "Return & Refund Process Friction",
+  "mechanism": "The return/refund process itself (not the reason for returning, the process of getting money or a replacement back) is confusing, slow, or perceived as designed to fail. The single largest theme in the corpus by volume.",
+  "metric_nodes": [
+   "M5"
+  ],
+  "corpus_share_pct": 14.18,
+  "total_evidence_count": 2399
+ },
+ {
+  "theme_id": "T3",
+  "name": "Trust Collapse → Stated Refusal to Repurchase",
+  "mechanism": "Cause-agnostic: cumulative negative experience (of any kind, not authenticity-specific) crossing a threshold and manifesting as an explicit statement of reduced or eliminated willingness to buy again, including polarized for/against trust declarations and competitive switching language.",
+  "metric_nodes": [
+   "M4",
+   "M6"
+  ],
+  "corpus_share_pct": 8.44,
+  "total_evidence_count": 1427
+ },
+ {
+  "theme_id": "T4",
+  "name": "Delivery & Fulfillment Reliability",
+  "mechanism": "Whether the order arrives at all, on time, and matching what was ordered: logistics and on-arrival quality/fit mismatch, distinct from authenticity suspicion (T1) and from the resolution process afterward (T2).",
+  "metric_nodes": [
+   "M4"
+  ],
+  "corpus_share_pct": 8.79,
+  "total_evidence_count": 1487
+ },
+ {
+  "theme_id": "T5",
+  "name": "Cross-Platform Comparison Shopping",
+  "mechanism": "User pauses the Myntra decision to actively benchmark against Amazon/AJIO/Meesho/Flipkart/Nykaa/offline on price, quality, or trust before deciding. The comparison dimension varies; the behavior (external benchmarking as a decision-stalling step) is the same mechanism throughout.",
+  "metric_nodes": [
+   "M2",
+   "M3"
+  ],
+  "corpus_share_pct": 3.26,
+  "total_evidence_count": 551
+ },
+ {
+  "theme_id": "T6",
+  "name": "Missing Product Information Blocks Decision",
+  "mechanism": "Specific, nameable product-attribute or policy information (fabric, safety/certification, return terms) is absent or ambiguous, stalling the move from wishlist to purchase, distinct from sizing specifically (T11) and from authenticity doubt (T1).",
+  "metric_nodes": [
+   "M2"
+  ],
+  "corpus_share_pct": 2.22,
+  "total_evidence_count": 375
+ },
+ {
+  "theme_id": "T7",
+  "name": "Wishlist as a Deliberate Price-Tracking Tool",
+  "mechanism": "The wishlist is being used as intended by a meaningful share of savers: a deferred-purchase mechanism gated on a future price drop or sale event, not a bookmark or bug.",
+  "metric_nodes": [
+   "M1"
+  ],
+  "corpus_share_pct": 1.46,
+  "total_evidence_count": 247
+ },
+ {
+  "theme_id": "T8",
+  "name": "External Discovery → Purchase-Access Friction",
+  "mechanism": "User discovers a product via external social/video content and wants a direct path to save or buy it; the gap between seeing it and being able to act on it inside the app is the friction. Carries a labeling-precision caveat: several members are literally 'please share the link' comments, not classic wishlist-save reasoning.",
+  "metric_nodes": [
+   "M1",
+   "M3"
+  ],
+  "corpus_share_pct": 1.03,
+  "total_evidence_count": 175
+ },
+ {
+  "theme_id": "T9",
+  "name": "Price & Timing-Driven Deferral",
+  "mechanism": "Purchase intent already exists; budget cycle, sale-event timing, or seasonal relevance is the stated reason for delaying, not an unresolved product doubt.",
+  "metric_nodes": [
+   "M3"
+  ],
+  "corpus_share_pct": 1.12,
+  "total_evidence_count": 189
+ },
+ {
+  "theme_id": "T10",
+  "name": "Operational Barriers at the Final Purchase Step",
+  "mechanism": "The user is ready to buy and is blocked by the platform's own systems at the last step: payment/checkout technical failures and inventory/size unavailability are different proximate causes but share the same functional role, an operational obstruction after intent is already formed.",
+  "metric_nodes": [
+   "M3"
+  ],
+  "corpus_share_pct": 1.35,
+  "total_evidence_count": 229
+ },
+ {
+  "theme_id": "T11",
+  "name": "Sizing & Fit Confidence Gap (pre-purchase)",
+  "mechanism": "Specifically sizing (mapping a body measurement to a size label) as an unresolved pre-purchase question, distinct from general product-quality doubt (T6) and from fit/fabric letdown after receipt (part of T4).",
+  "metric_nodes": [
+   "M2"
+  ],
+  "corpus_share_pct": 0.72,
+  "total_evidence_count": 121
+ },
+ {
+  "theme_id": "T12",
+  "name": "External Social Validation & Discovery-Seeking",
+  "mechanism": "Seeking influencer/peer social proof or brand discovery before trusting Myntra's own product page, distinct from T5's retailer-vs-retailer price/product comparison; this is about the source and credibility of information, not competitive benchmarking.",
+  "metric_nodes": [
+   "M2"
+  ],
+  "corpus_share_pct": 1.18,
+  "total_evidence_count": 199
+ }
+]
