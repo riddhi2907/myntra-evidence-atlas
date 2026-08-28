@@ -46,11 +46,23 @@ COMPETITOR_TERMS = [
     "shein", "zara", "h&m", "westside", "snapdeal", "limeroad", "urbanic",
 ]
 
-# Direct wishlist / save-for-later vocabulary, incl. Hinglish phrasing
+# Direct wishlist / save-for-later vocabulary, incl. Hinglish phrasing.
+# `favourite`/`favorite` are deliberately NOT here: in practice they fire on
+# "favourite colour" far more than on "add to favourites", so they were pure
+# noise in the score. Kept broad enough for `matched_terms` to stay useful.
 WISHLIST_TERMS = [
-    "wishlist", "wish list", "save for later", "saved item", "shortlist",
-    "favourite", "favorite", "heart icon", "bookmark", "cart", "add to bag",
+    "wishlist", "wish list", "wishlisted", "wishlisting", "save for later",
+    "saved item", "shortlist", "heart icon", "bookmark", "cart", "add to bag",
     "pasand", "baad me", "baad mein", "save karke",
+]
+
+# The subset that unambiguously means save-for-later behaviour -- not "cart"
+# (fires on every checkout complaint), not Hinglish near-misses. A record
+# carrying one of these is the evidence this demo most wants to surface, so it
+# gets a large score bonus AND a reserved selection slot (see select_top).
+WISHLIST_STRONG = [
+    "wishlist", "wish list", "wishlisted", "wishlisting",
+    "save for later", "saved item", "save karke",
 ]
 
 # Journey/intent language -- narrative markers that a record describes a decision
@@ -73,6 +85,12 @@ FRICTION_TERMS = [
 
 WEIGHTS = {"wishlist": 3, "journey": 2, "friction": 1, "brand": 4, "competitor": 2}
 MAX_COMPETITOR_BONUS = 4  # one comparison is signal; five brand names is a listicle
+# Applied once if any WISHLIST_STRONG term is present. Sized to clear a
+# friction-heavy rant (a long generic review hits ~6-10 distinct friction
+# terms) so genuine save-for-later evidence outranks it -- the whole point of
+# the live demo is the wishlist step, and public feedback is overwhelmingly
+# post-purchase complaint.
+STRONG_WISHLIST_BONUS = 8
 
 _SCORED = (
     [(t, "wishlist") for t in WISHLIST_TERMS]
@@ -89,6 +107,13 @@ def mentions_brand(text: str) -> bool:
     return any(b in low for b in PRIMARY_BRAND_TERMS)
 
 
+def has_strong_wishlist(text: str) -> bool:
+    """True if the text carries unambiguous save-for-later language. Drives both
+    the score bonus and the reserved selection slot in select_top."""
+    low = (text or "").lower()
+    return any(t in low for t in WISHLIST_STRONG)
+
+
 def score(text: str) -> int:
     """Weighted keyword score. Competitor mentions contribute only when Myntra is
     also present -- there they mark cross-platform comparison (T5); alone they
@@ -97,6 +122,9 @@ def score(text: str) -> int:
         return 0
     low = text.lower()
     total = sum(WEIGHTS[kind] for term, kind in _SCORED if term in low)
+
+    if has_strong_wishlist(low):
+        total += STRONG_WISHLIST_BONUS
 
     if mentions_brand(low):
         total += WEIGHTS["brand"]
@@ -117,6 +145,17 @@ def matched_terms(text: str) -> list[str]:
     if mentions_brand(low):
         hits |= {c for c in COMPETITOR_TERMS if c in low}
     return sorted(hits)
+
+
+def quote_is_off_subject(quote: str) -> bool:
+    """A theme-evidence quote that names a competitor but not Myntra. Used to
+    demote such quotes when picking which one to *show* for a theme -- a card
+    reading 'Ajio is fraud, never refund your money' under a Myntra return
+    theme is technically verbatim but reads as being about the competitor.
+    T5 (Cross-Platform Comparison) is exempt: naming a competitor is exactly
+    what its evidence should do."""
+    low = (quote or "").lower()
+    return any(c in low for c in COMPETITOR_TERMS) and not any(b in low for b in PRIMARY_BRAND_TERMS)
 
 
 _JUNK_RE = re.compile(

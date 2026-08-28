@@ -31,7 +31,7 @@ from __future__ import annotations
 from html import escape
 
 # --- surfaces ---------------------------------------------------------------
-# Ported directly from deliverables/myntra-wishlist-findings.html ("Evidence
+# Ported directly from docs/myntra-wishlist-findings.html ("Evidence
 # Atlas") -- that page is now the source of truth for this app's design, not
 # an independent interpretation of it. Values are copied, not approximated.
 CANVAS = "#eef5ff"

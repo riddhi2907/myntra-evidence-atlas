@@ -44,10 +44,16 @@ YOUTUBE_API = "https://www.googleapis.com/youtube/v3"
 # of 10,000; `commentThreads.list` costs 1. Three searches per run (~300 units)
 # leaves room for ~30 grader clicks a day while still being a genuine live
 # discovery pass rather than hardcoded video IDs.
+# "Myntra vs Ajio" was pulled: it reliably surfaced comment threads that
+# mention Myntra (so they pass the brand gate) but are *about* the competitor
+# -- "Ajio is fraud", "can't trust Meesho" -- which then got shown as Myntra
+# theme evidence. The EORS/wishlist query keeps the fan-out on-subject; comment
+# yield of literal wishlist language from YouTube is near zero regardless (the
+# wishlist supply comes from Reddit), so this is a noise cut, not a new source.
 YOUTUBE_QUERIES = [
     "Myntra haul honest review",
     "Myntra quality problem",
-    "Myntra vs Ajio",
+    "Myntra EORS wishlist haul",
 ]
 
 
@@ -290,6 +296,14 @@ def _arctic_get(session, path: str, params: dict, attempts: int = 3, spacing: fl
     raise RuntimeError(last or "unknown")
 
 
+# A bare-term Arctic Shift search for "wishlist" returns Myntra-relevant posts
+# in these two subs but nothing in r/IndianFashion -- and this is the demo's
+# only real source of save-for-later language (the review feeds and YouTube
+# comments almost never carry it). One extra request per sub, run alongside
+# the "myntra" pass, not after it.
+REDDIT_WISHLIST_SUBREDDITS = ["MyntraSucks", "IndianFashionAddicts"]
+
+
 def _reddit_sub(sub: str, query: str, per_sub: int) -> list[dict]:
     return _arctic_get(
         _session(), "/posts/search",
@@ -301,21 +315,32 @@ def fetch_reddit(query: str = "myntra", per_sub: int = 15) -> SourceResult:
     t0 = time.time()
     out: list[LiveRecord] = []
     errors: list[str] = []
-    # Subreddits run concurrently: each one may need 2-3 throttle retries with
-    # 2.5s spacing, and doing that sequentially across three subs put this
-    # source at ~22s -- the single slowest thing in the whole run.
-    by_sub: dict[str, list[dict]] = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(REDDIT_SUBREDDITS)) as pool:
-        futures = {pool.submit(_reddit_sub, s, query, per_sub): s for s in REDDIT_SUBREDDITS}
-        for fut in concurrent.futures.as_completed(futures):
-            sub = futures[fut]
-            try:
-                by_sub[sub] = fut.result()
-            except Exception as e:
-                errors.append(f"r/{sub}: {e}")
+    # (subreddit, query) tasks run concurrently: each may need 2-3 throttle
+    # retries with 2s spacing, and running them sequentially put this source at
+    # ~22s -- the single slowest thing in the run. The wishlist pass adds two
+    # tasks; max_workers grows with the task count so they don't queue behind
+    # the "myntra" pass.
+    tasks = [(s, query) for s in REDDIT_SUBREDDITS]
+    tasks += [(s, "wishlist") for s in REDDIT_WISHLIST_SUBREDDITS]
 
-    for sub, posts in by_sub.items():
+    results: list[tuple[tuple[str, str], list[dict]]] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(tasks)) as pool:
+        futures = {pool.submit(_reddit_sub, s, q, per_sub): (s, q) for s, q in tasks}
+        for fut in concurrent.futures.as_completed(futures):
+            sub, q = futures[fut]
+            try:
+                results.append(((sub, q), fut.result()))
+            except Exception as e:
+                errors.append(f"r/{sub} ({q}): {e}")
+
+    ok_subs = {sub for (sub, _), _ in results}
+    seen_posts: set[str] = set()
+    for (sub, q), posts in results:
         for p in posts:
+            post_id = str(p.get("id"))
+            if post_id in seen_posts:  # same post can match both query passes
+                continue
+            seen_posts.add(post_id)
             body = clean_text(p.get("selftext"))
             title = clean_text(p.get("title"))
             if body in ("[deleted]", "[removed]"):
@@ -326,21 +351,21 @@ def fetch_reddit(query: str = "myntra", per_sub: int = 15) -> SourceResult:
             permalink = p.get("permalink")
             out.append(
                 LiveRecord(
-                    evidence_id=make_evidence_id("reddit", str(p.get("id"))),
+                    evidence_id=make_evidence_id("reddit", post_id),
                     source="reddit",
                     source_type="forum_post",
                     text=text,
                     url=f"https://www.reddit.com{permalink}" if permalink else None,
                     author_id_hash=hash_author(p.get("author")),
                     published_at=normalize_date(p.get("created_utc")),
-                    query_used=f"r/{sub} :: {query}",
+                    query_used=f"r/{sub} :: {q}",
                     metadata={"subreddit": sub, "score": p.get("score"), "num_comments": p.get("num_comments")},
                 )
             )
 
     if not out:
         return SourceResult("reddit", [], False, "; ".join(errors) or "no posts returned", time.time() - t0)
-    detail = f"{len(out)} posts from {len(REDDIT_SUBREDDITS) - len(errors)}/{len(REDDIT_SUBREDDITS)} subreddits"
+    detail = f"{len(out)} posts from {len(ok_subs)}/{len(REDDIT_SUBREDDITS)} subreddits"
     if errors:
         detail += " (Arctic Shift throttled the rest)"
     return SourceResult("reddit", out, True, detail, time.time() - t0)
@@ -409,10 +434,22 @@ def fetch_all(
 
 
 def select_top(
-    results: list[SourceResult], n: int = 10, min_per_source: int = 1, max_per_source: int = 4
+    results: list[SourceResult],
+    n: int = 10,
+    min_per_source: int = 1,
+    max_per_source: int = 4,
+    min_wishlist: int = 3,
 ) -> tuple[list[LiveRecord], dict]:
     """Rank the fetched pool by keyword relevance and take the top `n`, bounded
     by a floor and a ceiling per source.
+
+    A `min_wishlist` reserve is filled first: up to that many of the
+    highest-scored records carrying unambiguous save-for-later language
+    (`relevance.has_strong_wishlist`). Public feedback about Myntra is
+    overwhelmingly post-purchase complaint, so without this the wishlist step --
+    the whole subject of the demo -- can go unrepresented in a 10-record batch.
+    If the pool holds fewer than `min_wishlist` such records, the rest of the
+    slots fill as normal; the reserve never pads with non-wishlist records.
 
     The ceiling matters: relevance scores distinct keyword hits, so a long
     Reddit post structurally outscores a two-line app review on topic alone.
@@ -455,6 +492,19 @@ def select_top(
     selected: list[LiveRecord] = []
     seen: set[str] = set()
     per_source: dict[str, int] = {}
+
+    # 0. wishlist reserve -- fill up to min_wishlist slots with the top-scored
+    # records that carry explicit save-for-later language, before anything else
+    # competes for slots.
+    wishlist_pool = [r for r in pool if relevance.has_strong_wishlist(r.text)]
+    stats["strong_wishlist_in_pool"] = len(wishlist_pool)
+    for rec in wishlist_pool[:min_wishlist]:
+        if rec.evidence_id in seen:
+            continue
+        selected.append(rec)
+        seen.add(rec.evidence_id)
+        per_source[rec.source] = per_source.get(rec.source, 0) + 1
+    stats["wishlist_reserved"] = len(selected)
 
     # 1. floor -- guarantee every responding source is represented
     for source in sorted({r.source for r in pool}):

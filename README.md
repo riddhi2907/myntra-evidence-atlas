@@ -94,8 +94,8 @@ Measured from this environment, and the reason the demo is built the way it is:
 |---|---|---|---|
 | **Google Play** | none | ~0.6s | The most reliable source; the primary. No server-side keyword search, so it pages the newest reviews and relevance ranking picks from there. |
 | **Apple App Store** | none | ~1–2s | Works, but the public RSS feed intermittently returns an empty page 1 with HTTP 200 and no error. `_app_store_page()` retries three times before believing it. The `l=en` query parameter is required for the India storefront — without it the feed silently returns zero entries (a Phase 1 finding, ported). |
-| **YouTube** | API key | ~2.5s | Live video search, then comment threads. `search.list` costs 100 quota units against a free daily budget of 10,000 and `commentThreads.list` costs 1, so the run does three searches (~300 units) — genuine live discovery, and still ~30 clicks/day. |
-| **Reddit** | none | ~9–12s | Via Arctic Shift, a public Reddit archive. It throttles hard, answering `422 "Timeout. Maybe slow down a bit"` rather than 429; a call typically needs 2–3 attempts. Subreddits are queried concurrently (sequential retries put this source alone at ~22s). **Never load-bearing** — it often returns only 1 of 3 subreddits. |
+| **YouTube** | API key | ~2.5s | Live video search, then comment threads. `search.list` costs 100 quota units against a free daily budget of 10,000 and `commentThreads.list` costs 1, so the run does three searches (~300 units) — genuine live discovery, and still ~30 clicks/day. Queries are two complaint-oriented and one EORS/wishlist; a "Myntra vs Ajio" query was dropped because it reliably surfaced competitor-focused comments that passed the brand gate but read as being about Ajio/Meesho. |
+| **Reddit** | none | ~8–14s | Via Arctic Shift, a public Reddit archive. It throttles hard, answering `422 "Timeout. Maybe slow down a bit"` rather than 429; a call typically needs 2–3 attempts. Runs five concurrent `(subreddit, query)` tasks — a `"myntra"` pass on all three subreddits plus a `"wishlist"` pass on the two Myntra-heavy ones, which is the demo's main source of save-for-later language (the review feeds and YouTube comments almost never carry it). **Never load-bearing** — it often returns only 1 of 3 subreddits. |
 
 All four are fetched in parallel behind a 30-second wall-clock deadline that
 is real, not advisory: `fetch_all` calls `shutdown(wait=False,
@@ -202,6 +202,19 @@ Dropped, with the reason each existed:
 - **Reddit skew.** Long Reddit posts structurally outscore two-line app
   reviews on keyword count, so `select_top` caps each source at 4 of 10;
   without the cap Reddit takes 8 slots.
+- **Wishlist reserve.** Public feedback about Myntra is overwhelmingly
+  post-purchase complaint, so a 10-record batch can surface no save-for-later
+  evidence at all — the one step the demo is about. `select_top` reserves up to
+  3 slots for records carrying explicit wishlist language
+  (`relevance.has_strong_wishlist`), and such records also get a fixed score
+  bonus. The reserve never pads: if the pool holds fewer, the slots fill
+  normally. This is a demo-framing choice, stated here and visible in the
+  selection funnel counts.
+- **Showcased quotes avoid competitor clauses.** For every theme except T5
+  (Cross-Platform Comparison, whose evidence *should* name a competitor), the
+  quote shown first is one that names Myntra rather than a competitor — a
+  verbatim "Ajio is fraud" clause is valid evidence but reads as being about
+  the wrong platform on a card. Ordering only; nothing is dropped.
 - **Sub-40-character records are dropped** before ranking ("Good", "Link",
   emoji-only). They carry no extractable journey signal at any relevance score.
 - **`r/MyntraSucks` is in the subreddit list**, which biases Reddit evidence

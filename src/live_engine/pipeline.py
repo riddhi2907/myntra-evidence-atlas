@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Optional
 
 from live_engine import classify as classify_mod
-from live_engine import collectors, metric_nodes, validate
+from live_engine import collectors, metric_nodes, relevance, validate
 from live_engine.normalize import LiveRecord, utc_now_iso
 from live_engine.prompt import PROMPT_VERSION, build_system_prompt, load_themes
 
@@ -215,6 +215,19 @@ def aggregate_themes(result: RunResult) -> list[ThemeHit]:
         t = themes.get(theme_id)
         if not t:
             continue
+        # Order the evidence so the quote we SHOW first is on-subject. For every
+        # theme except T5, a verbatim quote that names a competitor but not
+        # Myntra is pushed below the on-subject ones regardless of its
+        # confidence -- otherwise a high-confidence "Ajio is fraud" clause can
+        # end up as the displayed card for a Myntra theme. T5 keeps a pure
+        # confidence sort: naming a competitor is what its evidence is.
+        if theme_id == "T5":
+            ordered = sorted(evidence, key=lambda e: -e["confidence"])
+        else:
+            ordered = sorted(
+                evidence,
+                key=lambda e: (relevance.quote_is_off_subject(e["quote"]), -e["confidence"]),
+            )
         out.append(
             ThemeHit(
                 theme_id=theme_id,
@@ -224,7 +237,7 @@ def aggregate_themes(result: RunResult) -> list[ThemeHit]:
                 corpus_share_pct=t["corpus_share_pct"],
                 corpus_evidence_count=t["total_evidence_count"],
                 live_count=len(evidence),
-                evidence=sorted(evidence, key=lambda e: -e["confidence"]),
+                evidence=ordered,
             )
         )
     return sorted(out, key=lambda h: (-h.live_count, -h.corpus_share_pct))
