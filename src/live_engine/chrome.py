@@ -1,8 +1,7 @@
 """Shared page chrome: one CSS injection, used by every page.
 
-Ported from docs/myntra-wishlist-findings.html -- that page is the
-design source of truth for this app now, not an independent interpretation
-of it. Every color/type/shape value below comes from live_engine.charts, so
+The design source of truth is DESIGN-SYSTEM.md + the token values in
+live_engine.charts (a static prototype page seeded the original look). Every color/type/shape value below comes from live_engine.charts, so
 this file and the chart primitives cannot drift apart. Both pages
 (page_findings.py, page_engine.py) call inject_css() once at the top of
 their render(), so the two pages -- separate Streamlit rerun boundaries --

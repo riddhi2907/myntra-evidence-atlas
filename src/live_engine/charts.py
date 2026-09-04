@@ -31,9 +31,9 @@ from __future__ import annotations
 from html import escape
 
 # --- surfaces ---------------------------------------------------------------
-# Ported directly from docs/myntra-wishlist-findings.html ("Evidence
-# Atlas") -- that page is now the source of truth for this app's design, not
-# an independent interpretation of it. Values are copied, not approximated.
+# The design source of truth for this app: DESIGN-SYSTEM.md and the values
+# below (a static "Evidence Atlas" prototype page seeded the original look).
+# Values here are exact, not approximated.
 CANVAS = "#eef5ff"
 CANVAS_GRADIENT = (
     "radial-gradient(circle at 8% 7%, rgba(47,200,194,.24), transparent 25rem),"

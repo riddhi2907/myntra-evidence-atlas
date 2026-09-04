@@ -2,8 +2,8 @@
 
 Two pages, one design system:
   - Discovery Findings (live_engine/page_findings.py): the static
-    evidence-collection story, ported from
-    docs/myntra-wishlist-findings.html.
+    evidence-collection story (content also in
+    docs/DISCOVERY_ENGINE_FINDINGS.md).
   - Live Engine (live_engine/page_engine.py): fetch public consumer
     feedback right now, classify it against the locked codebook, map it
     onto the twelve opportunity themes and six metric-decomposition nodes.

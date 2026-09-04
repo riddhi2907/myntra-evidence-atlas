@@ -1,7 +1,7 @@
 """Discovery Findings page -- the static evidence-collection story.
 
-Content ported from docs/myntra-wishlist-findings.html ("Evidence
-Atlas"). This page never calls a live API and never reruns from a widget of
+Content ported from a static "Evidence Atlas" prototype page; the findings
+it showed now live in docs/DISCOVERY_ENGINE_FINDINGS.md. This page never calls a live API and never reruns from a widget of
 its own (only the "Try it yourself" button, which immediately navigates
 away) -- it is meant to sit still and be read.
 
@@ -417,6 +417,84 @@ def render(findings_page, engine_page) -> None:
             f'<div class="plot">{bubble_html}</div></figure>',
             unsafe_allow_html=True,
         )
+    _scene_close()
+
+    # --------------------------------------------------------------------------
+    # Research question coverage -- the engine was built to answer ten named
+    # research questions; this states, per question, how much weight each
+    # answer can actually bear. Placed after Signal Landscape (source-level
+    # trust) and before Integrity (collection-process trust): source quality
+    # -> answer quality -> process integrity, three honesty checks in
+    # ascending specificity, not one undifferentiated "trust us" block.
+    # Reuses status_row for the Strong/Partial state precisely because it
+    # already carries a text label alongside its color dot (accessibility)
+    # and needed no new token -- GOOD/WARN map directly onto Strong/Partial.
+    # --------------------------------------------------------------------------
+    _scene_open("coverage")
+    _section_id("Research question coverage")
+    st.markdown(
+        "<h2>Six of ten research questions have direct, quantified answers.</h2>"
+        '<p class="note" style="max-width:70ch;">Every answer below traces back to a specific field '
+        "or theme in the corpus, never asserted from memory. The other four aren't tagging failures "
+        "-- they're honest limits of what anonymous public reviews can say: most reviews never "
+        "narrate why something was wishlisted or how firm the intent to buy really is.</p>",
+        unsafe_allow_html=True,
+    )
+    st.write("")
+    cov_stat_cols = st.columns([1, 1], gap="large")
+    with cov_stat_cols[0]:
+        st.markdown(
+            charts.stat_tile(
+                "6 / 10", "Strong coverage",
+                "Direct, quantified, quote-traceable evidence", tone="good",
+            ),
+            unsafe_allow_html=True,
+        )
+    with cov_stat_cols[1]:
+        st.markdown(
+            charts.stat_tile(
+                "4 / 10", "Partial coverage",
+                "Real, quantified gaps -- not tagging failures", tone="warn",
+            ),
+            unsafe_allow_html=True,
+        )
+    st.write("")
+    rq_data = [
+        (1, "Why do users add products to their wishlist?", "warn", "Partial",
+         "wishlist_role tagged, but clearly codeable on only 3.2% of records"),
+        (2, "What prevents wishlisted products from being purchased?", "ok", "Strong",
+         "T1 (M2 slice), T6, T9, T10, T11"),
+        (3, "What uncertainties remain after a product is identified?", "ok", "Strong",
+         "T1, T6, T11"),
+        (4, "What causes users to postpone a purchase?", "ok", "Strong",
+         "T9 · 189 records of explicit deferral language"),
+        (5, "How do users compare multiple shortlisted products?", "warn", "Partial",
+         "Strong cross-platform (551 records); thin within-wishlist (64 records)"),
+        (6, "What information is sought outside Myntra/AJIO?", "ok", "Strong",
+         "T12, T8, and a dedicated external_research_channel field"),
+        (7, "Role of fit, size, styling, price, reviews, occasion, social validation?", "ok", "Strong",
+         "13 named factor_tags, each with its own sentiment"),
+        (8, "Genuine purchase intent vs. simple bookmarking?", "warn", "Partial",
+         "purchase_intent tagged, but clearly codeable on only 19% of records"),
+        (9, "How do behaviors differ across user segments?", "warn", "Partial",
+         "No demographic data in public corpora; proxy segments only (source, rating, engagement)"),
+        (10, "What unmet needs emerge consistently across user conversations?", "ok", "Strong",
+         "A second, independent method (request-language search) converged on the same theme as clustering"),
+    ]
+    rq_cols = st.columns(2, gap="large")
+    for col, chunk in zip(rq_cols, [rq_data[:5], rq_data[5:]]):
+        with col:
+            rows = []
+            for i, (num, question, state, label, evidence) in enumerate(chunk):
+                border = "border-bottom:1px solid var(--line);" if i < len(chunk) - 1 else ""
+                rows.append(
+                    f'<div style="padding:14px 0;{border}">'
+                    f'<div style="display:flex;align-items:center;gap:10px;">'
+                    f'<span class="layer-num" style="width:26px;height:26px;flex:0 0 26px;font-size:9px;">Q{num}</span>'
+                    f'<h3 style="margin:0 !important;font-size:13.5px !important;">{escape(question)}</h3></div>'
+                    f'<div style="margin-left:36px;">{charts.status_row(label, state, evidence)}</div></div>'
+                )
+            st.markdown("".join(rows), unsafe_allow_html=True)
     _scene_close()
 
     # ---- Integrity ----
